@@ -26,48 +26,38 @@ def fetch_all_data():
     return all_d, stats, total
 
 def run_pencarian(user_email, db, is_admin):
-    st.markdown("""
-    <div class="card">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-            <div>
-                <label class="form-label">TIPE IDENTIFIKASI</label>
-                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="search_type" value="Nama" checked style="accent-color: #003B70;">
-                        <span style="font-family: 'Inter', sans-serif; font-size: 14px;">Nama</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="search_type" value="NIK" style="accent-color: #003B70;">
-                        <span style="font-family: 'Inter', sans-serif; font-size: 14px;">NIK</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="search_type" value="Paspor" style="accent-color: #003B70;">
-                        <span style="font-family: 'Inter', sans-serif; font-size: 14px;">Paspor</span>
-                    </label>
-                </div>
-            </div>
-            <div>
-                <label class="form-label">SIMILARITY THRESHOLD</label>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: #003B70; background: #d4e3ff; padding: 2px 12px; border-radius: 4px;">85%</span>
-                    <input type="range" min="50" max="100" value="85" style="flex: 1;" id="threshold-slider">
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-                    <span style="font-family: 'Inter', sans-serif; font-size: 10px; color: #42474f;">Loose</span>
-                    <span style="font-family: 'Inter', sans-serif; font-size: 10px; color: #42474f;">Strict</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Search controls in a card
+    st.markdown('<div class="custom-card">', unsafe_allow_html=True)
     
-    # Streamlit components (hidden with CSS)
-    col1, col2 = st.columns([3, 1])
+    col1, col2, col3 = st.columns([1, 3, 2])
+    
     with col1:
-        metode = st.radio("", ["Nama", "NIK", "Paspor"], horizontal=True, key="search_method", label_visibility="collapsed")
-        query = st.text_input("CARI DATA", placeholder="Masukkan nama atau nomor identitas...", key="search_query", label_visibility="collapsed")
+        metode = st.radio(
+            "Tipe Identifikasi",
+            ["Nama", "NIK", "Paspor"],
+            horizontal=False,
+            key="search_method"
+        )
+    
     with col2:
-        threshold = st.slider("", 50, 100, 85, key="threshold", label_visibility="collapsed")
+        query = st.text_input(
+            "Cari Data",
+            placeholder="Masukkan nama atau nomor identitas...",
+            key="search_query"
+        )
+    
+    with col3:
+        threshold = st.slider(
+            "Similarity Threshold",
+            min_value=50,
+            max_value=100,
+            value=85,
+            step=1,
+            key="threshold"
+        )
+        st.caption("Akurasi minimum untuk pencocokan database")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Search button
     col1, col2, col3 = st.columns([1, 1, 4])
@@ -78,7 +68,7 @@ def run_pencarian(user_email, db, is_admin):
             else:
                 st.warning("Silakan masukkan data yang ingin dicari.")
     
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.divider()
 
 def perform_search(query, metode, threshold, user_email, db, is_admin):
     q_strip = query.replace(" ", "").replace(".", "").replace("-", "")
@@ -123,20 +113,10 @@ def perform_search(query, metode, threshold, user_email, db, is_admin):
             matches = matches[cols]
             res_dict[name] = matches
             
-            st.markdown(f"""
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 600; color: #003B70; margin: 0;">
-                        🚩 Ditemukan di Database: {name}
-                    </h3>
-                    <span class="badge badge-danger">{len(matches)} ditemukan</span>
-                </div>
-            """, unsafe_allow_html=True)
-            st.dataframe(matches, hide_index=True, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            with st.expander(f"🚩 Ditemukan di Database: {name} ({len(matches)} data)", expanded=True):
+                st.dataframe(matches, hide_index=True, use_container_width=True)
 
     if found and is_admin:
-        st.divider()
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             for sheet_name, data_frame in res_dict.items():
@@ -150,4 +130,4 @@ def perform_search(query, metode, threshold, user_email, db, is_admin):
             use_container_width=True
         )
     elif not found:
-        st.info("✅ Data tidak ditemukan di semua database.")
+        st.info("✅ Data tidak ditemukan di semua database dengan akurasi tersebut.")
