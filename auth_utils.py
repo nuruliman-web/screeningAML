@@ -6,11 +6,9 @@ from datetime import datetime
 USER_DB_FILE = "users_db.csv"
 
 def hash_pass(password):
-    """Hashing SHA256 agar password aman"""
     return hashlib.sha256(str.encode(str(password))).hexdigest()
 
 def load_user_db():
-    """Memuat database lokal users_db.csv"""
     if os.path.exists(USER_DB_FILE):
         try:
             df = pd.read_csv(USER_DB_FILE)
@@ -24,7 +22,6 @@ def load_user_db():
         return df
 
 def log_activity(user, activity, detail=""):
-    """Mencatat aktivitas ke admin_activity_log.csv"""
     log_file = "admin_activity_log.csv"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     new_log = pd.DataFrame([{"Timestamp": now, "User": user, "Aksi": activity, "Keterangan": detail}])
